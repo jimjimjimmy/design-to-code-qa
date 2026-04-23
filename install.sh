@@ -25,7 +25,26 @@ mkdir -p "$HOME/.claude/skills/design-to-code-qa"
 cp "$KIT_DIR/skill/SKILL.md" "$HOME/.claude/skills/design-to-code-qa/SKILL.md"
 echo "  ✅ Skill  → ~/.claude/skills/design-to-code-qa/SKILL.md"
 
-# 2. Templates
+# 2. Time-based skill-refresh hook (UserPromptSubmit)
+mkdir -p "$HOME/.claude/hooks"
+cp "$KIT_DIR/hooks/design-skill-refresh.sh" "$HOME/.claude/hooks/design-skill-refresh.sh"
+chmod +x "$HOME/.claude/hooks/design-skill-refresh.sh"
+echo "  ✅ Hook   → ~/.claude/hooks/design-skill-refresh.sh"
+echo ""
+echo "  ℹ️  To enable the hook, add this to ~/.claude/settings.json under \"hooks\":"
+cat <<'HOOKJSON'
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "$HOME/.claude/hooks/design-skill-refresh.sh" }
+        ]
+      }
+    ]
+HOOKJSON
+echo ""
+
+# 3. Templates
 mkdir -p "$HOME/.claude/templates/design-project"
 cp "$KIT_DIR/templates/design-project/bootstrap.sh"       "$HOME/.claude/templates/design-project/bootstrap.sh"
 cp "$KIT_DIR/templates/design-project/pre-commit-check.sh" "$HOME/.claude/templates/design-project/pre-commit-check.sh"

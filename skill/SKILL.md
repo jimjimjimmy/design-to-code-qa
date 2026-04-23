@@ -128,6 +128,49 @@ grep -rn "localhost:\|file://" preview/ src/ components/ 2>/dev/null
 
 ---
 
+## Mandatory Pre-Build Checklist — Before Writing Any JSX
+
+Before writing a single line of code for a new screen or component, complete every step:
+
+1. **Parent-down spec pull.** Call `get_metadata` on the parent frame. Identify every distinct visual element (not just unique layer names — same-named components can have variants that render completely differently at different sizes).
+2. **Per-element spec pull.** Call `get_design_context` on EACH distinct child element (hero, carousel cards, section titles, CTAs, etc.). Do not assume two same-named elements share a variant.
+3. **Trace padding / layout values.** From each `get_design_context` response, write down in your plan:
+   - `width × height`
+   - All padding values, especially directional `pr-*`, `pl-*`, `pt-*`, `pb-*`
+   - Any `flex-1` / `flex-[1_0_0]` that controls which region fills vs which is constrained
+   - Gradient stops exactly (e.g. `from-[15.636%] from-[rgba(0,0,0,0.8)] to-[80%]`)
+   - Font size / weight / lineHeight / letterSpacing for every text node
+4. **Name the component source.** For each element, decide: (a) is there an EXACT matching component already in this file, or (b) do I need a new one? Never pattern-match to a "similar-looking" existing component. A similar name or similar layout is not good enough — match the spec exactly.
+5. **Download assets.** Any non-SVG asset referenced in the spec must be saved to `assets/` before writing JSX that references it.
+
+## Mandatory Visual-Diff Gate — Before Marking Done
+
+After rendering, before saying "done" or "ready to commit":
+
+1. Take a screenshot of the rendered component.
+2. Place it side-by-side with the Figma reference screenshot.
+3. Write a bullet list of differences. Scan for:
+   - Content column width (is text constrained to the correct region via `pr:*`?)
+   - Badge / pill position, size, color, border
+   - Gradient direction and stops
+   - Type size and weight for every text element
+   - Action / engagement bar alignment (left-clustered vs. spread)
+   - Spacing between sections (gap, margin, padding)
+4. If the list is non-empty, FIX before asking for commit approval.
+5. Only emit "DIFF: none" and request commit after the diff list is empty.
+
+## Anti-Pattern: Pattern-Matching to Existing Components
+
+Symptom: "This new thing looks kind of like `ExistingComponent` — I'll reuse it at a different size."
+
+Why it fails: Figma components often have internal variants that rewire layout at different sizes. A 996-wide "Post - Image" is not a scaled-up 319-wide "Post - Image." The engagement bar position, content column padding, title size, and gradient can all be different.
+
+Rule: if you catch yourself reusing a component you didn't build specifically for this element, stop. Re-run the per-element spec pull and either confirm the existing component is exact, or build a new one.
+
+## Session Hygiene — Keeping Rules Sticky
+
+This skill is auto-reinjected by `~/.claude/hooks/design-skill-refresh.sh` (a `UserPromptSubmit` hook) every 30 minutes, or whenever the user's prompt contains a design-work keyword (`figma`, `design`, `storybook`, `component`, `pixel`, `mockup`, `screen`, `hero`, `carousel`). If you see the `[design-skill-refresh]` banner in a prompt, re-read the checklist above before touching any tool.
+
 ## When This Skill Applies — Activation Triggers
 
 - User asks to build, implement, port, or convert a design into code.
