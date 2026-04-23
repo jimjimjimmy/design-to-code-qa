@@ -1,0 +1,64 @@
+# {PROJECT_NAME} — Project Context
+
+<!-- Replace {PROJECT_NAME} and fill in sections as you go. Last updated: YYYY-MM-DD — Machine -->
+
+## ⚠️ Required Reading Before Building
+
+**Before implementing any new component or fixing any visual bug, read the `design-to-code-qa` skill and the canonical pipeline doc:**
+
+- Skill: `~/.claude/skills/design-to-code-qa/SKILL.md`
+- Canonical: `~/Dropbox/04 Projects/AI Shared/memory/process_design_to_code_pipeline.md`
+
+Non-negotiables from that doc:
+1. **No `localhost:*` or `file://` URLs in committed code.** Fetch and save every asset from Figma MCP into `assets/` before committing.
+2. **Run the pre-commit checklist** (visual + technical QA) before any commit that touches visuals.
+3. **`grep -rn "localhost:\|file://" preview/ src/ components/`** should return nothing.
+
+If the Figma desktop app isn't available (MCP server down, network blocked), STOP and ask — do not improvise placeholder assets without explicit user approval.
+
+---
+
+## What this is
+{1-2 sentence description of the project — what it is, who it's for, what stack.}
+
+## Key files
+```
+{Describe the project's main files and where work happens.}
+```
+
+## Stack
+- {framework/library}
+- {build tool or "no build step"}
+- {fonts, CDNs}
+
+## Folder structure
+```
+assets/
+  icons/        ← UI icons (chevrons, search, close, plus)
+    logos/      ← brand/third-party logos
+  images/       ← photos, illustrations
+components/     ← extracted reusable components (if applicable)
+{project-specific}
+```
+
+## Design tokens
+{List or point to the source of truth.}
+
+## Adding a new component
+{Step-by-step: where to put it, how to register it, how to QA it.}
+
+## Critical editing rules
+- {Project-specific gotchas.}
+- JSX style must be objects, never strings.
+- All SVG attributes camelCase: `strokeWidth`, `strokeLinecap`, etc.
+
+## GitHub workflow
+```bash
+# remotes, push patterns, branch strategy
+```
+
+---
+
+## Memory & collaboration
+- Cross-machine memory sync: `~/Dropbox/04 Projects/AI Knowledge/Claude-Mem/merge-mem.sh`
+- User preferences: `~/Dropbox/04 Projects/AI Shared/memory/MEMORY.md`
