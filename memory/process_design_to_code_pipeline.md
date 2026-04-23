@@ -74,7 +74,7 @@ Two separate passes. Do not collapse them.
 - **Percy (BrowserStack)** — wrap tests with `percySnapshot()`; works with Playwright/Cypress/Storybook.
 - **Applitools Eyes** — AI-based (not pixel diff); fewer false positives from anti-aliasing.
 
-Not needed for small personal projects, but set up before you have 50+ components.
+Not needed for small projects or early-stage work, but set up before you have 50+ components.
 
 ---
 

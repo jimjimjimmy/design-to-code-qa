@@ -35,7 +35,7 @@ esac
 
 # Only fire for visual files
 case "$FILE_PATH" in
-  *.tsx|*.jsx|*storybook.html|*preview.html) ;;
+  *.tsx|*.jsx|*.mdx|*storybook.html|*preview.html) ;;
   *) exit 0 ;;
 esac
 
