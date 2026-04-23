@@ -76,7 +76,7 @@ Do NOT collapse these into one. They catch different failures.
 2. Check Network tab — any 404s? Any `localhost:*` requests? If yes → assets aren't local.
 3. **Disable network mid-render** and reload — still look right (minus CDN photos)? If no → local assets missing.
 4. Resize viewport — intended breakpoints still work?
-5. Cross-browser spot check (user uses Brave primarily).
+5. Cross-browser spot check on the browsers your team uses.
 
 ### Automated visual regression (when project grows)
 

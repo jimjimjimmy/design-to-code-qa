@@ -46,7 +46,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   echo "  ✅ Memory → $MEM_DIR/process_design_to_code_pipeline.md"
   echo ""
   echo "  ℹ️  Update the absolute path in your ~/.claude/skills/design-to-code-qa/SKILL.md"
-  echo "     (currently references Jimmy's Dropbox — change line 10 to $MEM_DIR/...)"
+  echo "     (change the path on line 10 to $MEM_DIR/...)"
 fi
 
 echo ""
