@@ -14,7 +14,7 @@ See [SUMMARY.md](./SUMMARY.md) for a per-file breakdown.
 
 ---
 
-## Install
+## Install — Claude Code (CLI)
 
 ```bash
 git clone https://github.com/jimjimjimmy/design-to-code-qa.git
@@ -26,6 +26,34 @@ What it installs:
 - `~/.claude/skills/design-to-code-qa/SKILL.md` — auto-activates in Claude Code on design work
 - `~/.claude/templates/design-project/` — bootstrap script + git hook + CLAUDE.md template
 - (optional) A canonical pipeline doc copied to a memory folder you pick
+
+---
+
+## Install — Claude Desktop (chat app)
+
+Claude Desktop doesn't have the `~/.claude/skills/` system, so auto-activation won't work. You set it up manually per Project instead. The git-hook safety net still works the same.
+
+**One-time setup per Project:**
+
+1. Clone the repo (for reference): `git clone https://github.com/jimjimjimmy/design-to-code-qa.git`
+2. Open `memory/process_design_to_code_pipeline.md` and copy its contents.
+3. In Claude Desktop → create a new **Project** for your design work.
+4. Paste the pipeline doc into the Project's **Custom Instructions** (or "Project knowledge").
+5. Prepend this line so Claude treats it as binding:
+   > *"Before implementing any UI from a Figma design or design spec, read and follow this pipeline end-to-end. The pre-commit checklist is mandatory."*
+
+**Per design project (the git-hook safety net, still works for Desktop users):**
+
+```bash
+cd /path/to/your/design-project
+git init   # if not already a repo
+# Copy the bootstrap into place (or just run it from the cloned kit):
+bash /path/to/design-to-code-qa/templates/design-project/bootstrap.sh "Project Name"
+```
+
+Bootstrap installs the pre-commit hook, creates the `assets/` folder structure, and drops a `CLAUDE.md` the Project can also reference.
+
+**Note:** On Claude Desktop, you're responsible for telling Claude to follow the pipeline — it won't auto-load. The git hook is your deterministic backstop if Claude forgets.
 
 ---
 
