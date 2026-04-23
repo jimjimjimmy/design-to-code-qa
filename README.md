@@ -81,7 +81,8 @@ bash ~/.claude/templates/design-project/bootstrap.sh "My Project"
 What bootstrap does:
 1. Drops a `CLAUDE.md` with the required-reading header
 2. Creates `assets/icons/logos/`, `assets/images/`
-3. Installs `.git/hooks/pre-commit` that blocks commits containing `localhost:*` / `file://` URLs in code files
+3. **Prompts** whether to scaffold a standalone `preview/storybook.html` (default: **No**). Most projects already have a component preview (team Storybook, dev server, Figma) and don't need a second one. Say yes only for solo/personal projects with no surrounding app. Override non-interactively with `WITH_STORYBOOK=1` or `WITH_STORYBOOK=0`.
+4. Installs `.git/hooks/pre-commit` that blocks commits containing `localhost:*` / `file://` URLs in code files
 
 From there, any Claude Code session working on that project will auto-load the skill and follow the pipeline.
 
