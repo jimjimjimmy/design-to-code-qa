@@ -24,8 +24,21 @@ bash install.sh
 
 What it installs:
 - `~/.claude/skills/design-to-code-qa/SKILL.md` — auto-activates in Claude Code on design work
+- `~/.claude/hooks/` — **three-hook package** (see below)
 - `~/.claude/templates/design-project/` — bootstrap script + git hook + CLAUDE.md template
 - (optional) A canonical pipeline doc copied to a memory folder you pick
+
+### The three-hook package
+
+Skill auto-activation is not 100% reliable across long sessions and context compactions. These hooks are deterministic backstops — cheap in tokens, aggressive at keeping the rules present.
+
+| Hook | Event | What it does |
+|---|---|---|
+| `design-session-start.sh`    | `SessionStart`     | Injects the three hard rules (parent-down spec pull, trace padding, visual diff) at turn 1 of every session. |
+| `design-skill-refresh.sh`    | `UserPromptSubmit` | Re-injects the full SKILL.md every 30 minutes, or immediately on any prompt containing a design keyword (`figma`, `design`, `storybook`, `component`, etc.). |
+| `design-visual-edit-gate.sh` | `PostToolUse`      | After any `Write`/`Edit` to `.tsx` / `.jsx` / `storybook.html` / `preview.html`, injects a non-blocking DIFF-checklist reminder so the session can't declare "done" without a visual diff pass. |
+
+After `install.sh`, the script prints the exact JSON to paste into `~/.claude/settings.json` under `"hooks"` to enable all three.
 
 ---
 
@@ -106,6 +119,10 @@ design-to-code-qa/
 ├── install.sh                       ← copies files to ~/.claude/
 ├── skill/
 │   └── SKILL.md                     ← auto-loaded by Claude Code
+├── hooks/
+│   ├── design-session-start.sh     ← SessionStart primer (3 hard rules)
+│   ├── design-skill-refresh.sh     ← UserPromptSubmit refresh (time + keyword)
+│   └── design-visual-edit-gate.sh  ← PostToolUse DIFF reminder on visual files
 ├── memory/
 │   └── process_design_to_code_pipeline.md   ← canonical long-form doc
 └── templates/

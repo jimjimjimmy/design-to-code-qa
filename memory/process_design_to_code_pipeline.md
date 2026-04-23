@@ -65,7 +65,8 @@ Two separate passes. Do not collapse them.
 2. **Check network tab** — any 404s? Any `localhost:*` requests? (If yes → assets aren't local.)
 3. **Disable network mid-render** and reload — does it still look right, except for photos? (It should — only CDN photos should depend on network.)
 4. **Resize viewport** — intended breakpoints still work?
-5. **Cross-browser** spot-check on the browsers the user actually uses (Brave, Chrome, Safari).
+5. **Cross-browser** spot-check on the browsers your team actually uses.
+
 
 ### Automated visual regression (when the project grows)
 

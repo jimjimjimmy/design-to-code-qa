@@ -1,5 +1,6 @@
 #!/bin/bash
-# Install the design-to-code-qa kit into ~/.claude/ and ~/Dropbox (optional).
+# Install the design-to-code-qa kit into ~/.claude/ (and optionally a memory folder of your choice).
+# Installs the skill, three hooks, project templates, and optionally the canonical pipeline doc.
 #
 # Usage:
 #   bash install.sh
@@ -25,19 +26,40 @@ mkdir -p "$HOME/.claude/skills/design-to-code-qa"
 cp "$KIT_DIR/skill/SKILL.md" "$HOME/.claude/skills/design-to-code-qa/SKILL.md"
 echo "  ✅ Skill  → ~/.claude/skills/design-to-code-qa/SKILL.md"
 
-# 2. Time-based skill-refresh hook (UserPromptSubmit)
+# 2. Three-hook package
+#    - design-skill-refresh.sh   (UserPromptSubmit) — re-inject skill every 30 min or on design keywords
+#    - design-visual-edit-gate.sh (PostToolUse)     — DIFF reminder after Write/Edit on visual files
+#    - design-session-start.sh    (SessionStart)    — hard-rules primer at turn 1
 mkdir -p "$HOME/.claude/hooks"
-cp "$KIT_DIR/hooks/design-skill-refresh.sh" "$HOME/.claude/hooks/design-skill-refresh.sh"
-chmod +x "$HOME/.claude/hooks/design-skill-refresh.sh"
-echo "  ✅ Hook   → ~/.claude/hooks/design-skill-refresh.sh"
+for H in design-skill-refresh.sh design-visual-edit-gate.sh design-session-start.sh; do
+  cp "$KIT_DIR/hooks/$H" "$HOME/.claude/hooks/$H"
+  chmod +x "$HOME/.claude/hooks/$H"
+  echo "  ✅ Hook   → ~/.claude/hooks/$H"
+done
 echo ""
-echo "  ℹ️  To enable the hook, add this to ~/.claude/settings.json under \"hooks\":"
+echo "  ℹ️  To enable the hooks, add this to ~/.claude/settings.json under \"hooks\":"
 cat <<'HOOKJSON'
     "UserPromptSubmit": [
       {
         "matcher": "*",
         "hooks": [
           { "type": "command", "command": "$HOME/.claude/hooks/design-skill-refresh.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "$HOME/.claude/hooks/design-visual-edit-gate.sh" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "$HOME/.claude/hooks/design-session-start.sh" }
         ]
       }
     ]
