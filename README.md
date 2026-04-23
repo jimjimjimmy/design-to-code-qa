@@ -1,5 +1,7 @@
 # design-to-code-qa
 
+**Status:** Alpha (v0.1.0-alpha) — published, seeking real-world use. See [Versioning](#versioning) and [CHANGELOG](./CHANGELOG.md).
+
 A portable kit for Claude Code that enforces **pixel-faithful, transportable Figma → code builds**.
 
 Forged from a real-world lesson: shipping a project with `http://localhost:*/...` asset URLs baked in — a build that only rendered while Figma desktop was running. This kit is the guardrail so that doesn't happen again, for you or anyone you hand it to.
@@ -131,6 +133,37 @@ design-to-code-qa/
         ├── bootstrap.sh             ← one-command project setup
         ├── pre-commit-check.sh      ← git hook
         └── CLAUDE.md.template       ← project header template
+```
+
+---
+
+## Versioning
+
+Three stages, advance manually:
+
+- **Alpha** — first publish. Shape may change. Expect breaking updates between versions.
+- **Beta** — shape locked, hardening in use. Safe for non-critical work.
+- **Stable** — API frozen. Semver-level changes only. Production-ready.
+
+Promotion requires a conscious commit (e.g. `v0.1.0-alpha` → `v0.2.0-beta` → `v1.0.0`). No silent transitions. Self-policed.
+
+---
+
+## Personalizing the skill
+
+The skill runs generically out of the box. To tailor it to your browser, preview style, and screenshot tool, run:
+
+```bash
+bash ~/.claude/skills/design-to-code-qa/onboard.sh
+```
+
+This writes `~/.claude/skills/design-to-code-qa/user-prefs.md`. The skill reads that file if present and phrases its instructions in your terms.
+
+**Team overlays.** If you want a group of designers to share a preset (browser, preview reference, terminology), write a small overlay script that writes `user-prefs.md` directly and skips the interactive prompts. The public kit stays generic; your overlay stays private. Install flow becomes:
+
+```bash
+bash install.sh            # public kit
+bash your-overlay.sh       # writes user-prefs.md with team defaults
 ```
 
 ---

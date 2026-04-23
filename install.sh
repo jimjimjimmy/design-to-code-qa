@@ -21,10 +21,13 @@ KIT_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo "📦 Installing design-to-code-qa kit from: $KIT_DIR"
 echo ""
 
-# 1. Skill
+# 1. Skill + onboarding script
 mkdir -p "$HOME/.claude/skills/design-to-code-qa"
 cp "$KIT_DIR/skill/SKILL.md" "$HOME/.claude/skills/design-to-code-qa/SKILL.md"
-echo "  ✅ Skill  → ~/.claude/skills/design-to-code-qa/SKILL.md"
+echo "  ✅ Skill    → ~/.claude/skills/design-to-code-qa/SKILL.md"
+cp "$KIT_DIR/onboard.sh" "$HOME/.claude/skills/design-to-code-qa/onboard.sh"
+chmod +x "$HOME/.claude/skills/design-to-code-qa/onboard.sh"
+echo "  ✅ Onboard  → ~/.claude/skills/design-to-code-qa/onboard.sh"
 
 # 2. Three-hook package
 #    - design-skill-refresh.sh   (UserPromptSubmit) — re-inject skill every 30 min or on design keywords
@@ -96,3 +99,8 @@ echo ""
 echo "   To bootstrap a new design project:"
 echo "     cd /path/to/your/project"
 echo "     bash ~/.claude/templates/design-project/bootstrap.sh \"Project Name\""
+echo ""
+echo "   Optional — personalize the skill to your tools (~30 seconds):"
+echo "     bash ~/.claude/skills/design-to-code-qa/onboard.sh"
+echo "   Teams with a shared preset can write a separate overlay script that"
+echo "   writes user-prefs.md directly instead of running onboard interactively."

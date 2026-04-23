@@ -7,6 +7,8 @@ description: MANDATORY before building any UI from a Figma design, design spec, 
 
 Read this end-to-end **before writing a single line of code** when implementing from a design. Then do the work. Then run the pre-commit checklist before any commit.
 
+If `~/.claude/skills/design-to-code-qa/user-prefs.md` exists, read it first — it tells you which browser, preview style, and screenshot tool this designer uses. Phrase the skill's instructions in those terms instead of generic placeholders.
+
 If the project has a local copy of `process_design_to_code_pipeline.md`, read that too — it's the source of truth.
 
 ---
