@@ -7,7 +7,7 @@
 **Before implementing any new component or fixing any visual bug, read the `design-to-code-qa` skill and the canonical pipeline doc:**
 
 - Skill: `~/.claude/skills/design-to-code-qa/SKILL.md`
-- Canonical: `~/Dropbox/04 Projects/AI Shared/memory/process_design_to_code_pipeline.md`
+- Canonical: `memory/process_design_to_code_pipeline.md` (in this repo, or wherever your team keeps it)
 
 Non-negotiables from that doc:
 1. **No `localhost:*` or `file://` URLs in committed code.** Fetch and save every asset from Figma MCP into `assets/` before committing.
@@ -60,5 +60,4 @@ components/     ← extracted reusable components (if applicable)
 ---
 
 ## Memory & collaboration
-- Cross-machine memory sync: `~/Dropbox/04 Projects/AI Knowledge/Claude-Mem/merge-mem.sh`
-- User preferences: `~/Dropbox/04 Projects/AI Shared/memory/MEMORY.md`
+- {Optional: add your team's memory sync or shared docs path here.}

@@ -23,7 +23,7 @@ Figma's official workflow (verified via their MCP docs):
 1. **`get_design_context`** → structured representation of the design.
 2. **`get_metadata`** → if step 1 is truncated, use to navigate + re-fetch specific nodes.
 3. **`get_screenshot`** → for visual reference while building.
-4. **Download every asset.** This is the step that was skipped in Beacon's CorroborationCard — localhost:3845 URLs were committed raw. Each asset URL returned by MCP must be:
+4. **Download every asset.** This is the step most commonly skipped — localhost URLs get committed raw and break the moment the generator tool closes. Each asset URL returned by MCP must be:
    - Fetched (`curl`, WebFetch, or MCP's asset download)
    - Saved under `assets/icons/` (or `assets/icons/logos/`, `assets/images/`, etc. — organize by kind)
    - Referenced by relative path in the code
@@ -36,7 +36,7 @@ assets/
   icons/         ← UI icons (chevrons, search, etc.)
     logos/       ← brand/third-party logos (news outlets, social, payments)
   images/        ← photos, illustrations, hero art
-  nav-icons/     ← complex multi-layer icon parts (Beacon project)
+  nav-icons/     ← complex multi-layer icon parts (if your project uses them)
 ```
 
 ### Rules by asset type
@@ -87,11 +87,10 @@ An asset is "transportable" if the build still works when you:
 
 If any of those four fail, assets are not transportable.
 
-For the Beacon project specifically:
-- `preview/storybook.html` is served by GitHub Pages.
-- All asset references must be **relative paths** from that file.
+For your project specifically:
+- All asset references must be **relative paths** from your output file.
 - `<img src="../assets/icons/..."/>` ← correct
-- `<img src="http://localhost:3845/..."/>` ← broken the moment Figma isn't serving
+- `<img src="http://localhost:*/..."/>` ← broken the moment Figma isn't serving
 
 ---
 

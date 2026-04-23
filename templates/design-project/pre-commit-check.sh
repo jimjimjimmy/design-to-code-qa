@@ -34,7 +34,7 @@ if [ -n "$BAD" ]; then
   echo "These URLs only work while the generating tool (Figma Dev Mode MCP, etc.) is running."
   echo "Fetch each asset, save to assets/, and reference by relative path before committing."
   echo ""
-  echo "See: ~/Dropbox/04 Projects/AI Shared/memory/process_design_to_code_pipeline.md"
+  echo "See: https://github.com/jimjimjimmy/design-to-code-qa/blob/main/memory/process_design_to_code_pipeline.md"
   echo ""
   echo "To bypass for an emergency (not recommended): git commit --no-verify"
   exit 1

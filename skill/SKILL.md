@@ -7,7 +7,7 @@ description: MANDATORY before building any UI from a Figma design, design spec, 
 
 Read this end-to-end **before writing a single line of code** when implementing from a design. Then do the work. Then run the pre-commit checklist before any commit.
 
-If the canonical copy of this is present at `/Users/jimmyche/Library/CloudStorage/Dropbox/04 Projects/AI Shared/memory/process_design_to_code_pipeline.md`, read that too — it's the source of truth.
+If the project has a local copy of `process_design_to_code_pipeline.md`, read that too — it's the source of truth.
 
 ---
 
@@ -32,7 +32,7 @@ Figma's own MCP docs prescribe this order — follow it literally:
 1. `get_design_context` — structured representation.
 2. `get_metadata` — if (1) is truncated, navigate + re-fetch specific nodes.
 3. `get_screenshot` — visual reference while building.
-4. **Download every asset.** Every single `localhost:3845/assets/*.svg` (or equivalent) must be:
+4. **Download every asset.** Every `localhost:*/assets/*.svg` (or equivalent) must be:
    - Fetched (`curl`, WebFetch, or MCP asset download)
    - Saved to `assets/icons/` (subfolder by kind: `logos/`, `nav-icons/`, etc.)
    - Referenced via relative path in code
@@ -47,7 +47,7 @@ assets/
   icons/        ← UI icons (chevrons, search, close, plus)
     logos/      ← brand/third-party logos (news outlets, social platforms, payments)
   images/       ← photos, illustrations, hero art
-  nav-icons/    ← complex multi-layer icon parts
+  nav-icons/    ← complex multi-layer icon parts (if applicable)
 ```
 
 ### Rules by asset type

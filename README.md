@@ -2,7 +2,7 @@
 
 A portable kit for Claude Code that enforces **pixel-faithful, transportable Figma → code builds**.
 
-Forged from a real-world lesson: shipping a storybook with `http://localhost:3845/...` asset URLs baked in — a build that only rendered while Figma desktop was running. This kit is the guardrail so that doesn't happen again, for you or anyone you hand it to.
+Forged from a real-world lesson: shipping a project with `http://localhost:*/...` asset URLs baked in — a build that only rendered while Figma desktop was running. This kit is the guardrail so that doesn't happen again, for you or anyone you hand it to.
 
 ---
 
@@ -119,4 +119,4 @@ design-to-code-qa/
 
 ## Credits
 
-Born from building the Beacon civic-news design system. Rules match Figma's own Dev Mode MCP guidance — this kit just makes them enforceable.
+Born from a real-world Figma-to-code project. Rules match Figma's own Dev Mode MCP guidance — this kit just makes them enforceable.
