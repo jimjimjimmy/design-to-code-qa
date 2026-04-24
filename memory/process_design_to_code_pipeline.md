@@ -1,119 +1,173 @@
 # Design → Code → QA Pipeline
 
-The end-to-end process for implementing a Figma design into a React or HTML preview, then doing visual + technical QA. Based on industry best practice and Figma's own Dev Mode MCP guidelines.
+The canonical long-form reference for the design-to-code-qa kit. Mirrors the execution checklist in `skill/SKILL.md` and expands on the why behind each phase. If you're Claude executing this pipeline, the shorter SKILL.md is the operational source of truth — this doc is for humans and for deeper reference.
 
 ---
 
 ## The One Rule That Covers Most Mistakes
 
-**Generator-time URLs must never end up in committed code.** When any tool (Figma MCP, AI codegen, design plugin) hands you a `localhost:*/...` URL, a `file://...` path, or a reference to a build-machine-only resource — that URL works *during generation only*. Before committing, you must:
+**Generator-time URLs must never end up in committed code.** When any tool (Figma Dev Mode MCP, AI codegen, design plugin) hands you a `localhost:*/...` URL, a `file://...` path, or a `127.0.0.1:*/...` reference — that URL works *during generation only*. Before committing:
 
-1. Fetch the asset (download the file).
-2. Save it to the repo under `assets/` (or equivalent).
-3. Rewrite the reference to a **relative path from the repo root** (e.g. `./assets/icons/logos/reuters.svg`).
+1. Fetch the asset.
+2. Save it to the repo under `assets/` (following the folder convention that already exists).
+3. Rewrite the reference to a relative path from the file doing the referencing.
 
-If the asset lives anywhere other than inside the repo, the build is broken by definition — it'll render for the person who generated it and nobody else, whenever the dev server happens to be running.
+A build that renders only when Figma is open is not a build. It's a demo.
 
 ---
 
-## Figma → Code Asset Pipeline
+## The Five-Phase Execution Model
 
-Figma's official workflow (verified via their MCP docs):
+The kit enforces a sequence. Each phase ends with a STOP GATE — a condition that must be true before the next phase starts.
 
-1. **`get_design_context`** → structured representation of the design.
-2. **`get_metadata`** → if step 1 is truncated, use to navigate + re-fetch specific nodes.
-3. **`get_screenshot`** → for visual reference while building.
-4. **Download every asset.** This is the step most commonly skipped — localhost URLs get committed raw and break the moment the generator tool closes. Each asset URL returned by MCP must be:
-   - Fetched (`curl`, WebFetch, or MCP's asset download)
-   - Saved under `assets/icons/` (or `assets/icons/logos/`, `assets/images/`, etc. — organize by kind)
-   - Referenced by relative path in the code
-5. **Only then** start implementation.
+### Phase 0 — Setup
 
-### Asset folder convention for `assets/`
+Before anything else:
+
+1. `ls assets/` — record the existing folder convention verbatim. If `assets/images/` exists, new images go there. Do not invent `preview/assets/` or anything else.
+2. Read `user-prefs.md` in the skill directory — pick up browser, preview style, screenshot tool, terminology.
+3. Identify the preview entry file (e.g. `preview/storybook.html`). Every relative asset path resolves from its directory.
+
+**GATE:** Record (a) the asset folder path, (b) the preview file's directory, (c) the relative path shape from preview → assets.
+
+**Why this exists:** The #1 real-world failure was saving `expert-aaron-miller.png` to `preview/assets/images/` when the repo convention was `assets/images/` at the root. `ls` first prevents the whole class of mistake.
+
+### Phase 1 — Spec Pull
+
+For the target Figma node:
+
+1. `Figma:get_metadata` on the parent frame. List every distinct visual element.
+2. `Figma:get_design_context` on each child. Never assume same-named siblings share a variant.
+3. `Figma:get_screenshot` on the parent. Save it as the visual reference.
+4. Write into your plan, per element: width × height, directional padding (`pt`/`pr`/`pb`/`pl`), flex regions, gradient stops verbatim, font size/weight/lineHeight/letterSpacing for every text node, every asset URL the MCP returned (these are temporary).
+
+**GATE:** Plan contains measured specs for every element. No "roughly."
+
+### Phase 2 — Asset Download + Verify
+
+For every non-inline asset:
+
+1. Pick the destination inside the folder recorded in Phase 0.
+2. Download: `curl -sSL "<mcp-url>" -o <dest>`.
+3. Immediately verify: `ls -la <dest>` (non-zero size).
+4. Compute the relative path from the preview file to the asset. Write it down.
+5. Confirm no 404 in the browser before moving on.
+
+**GATE:** Every asset exists at its recorded path and the relative path string is written down.
+
+### Phase 3 — Implementation
+
+Write the component. For each `src=`, `href=`, `url(...)`:
+
+1. Use the exact relative path from Phase 2.
+2. Immediately resolve the path mentally or with `ls` — confirm it points at the downloaded file.
+3. Never pattern-match to a similar-looking existing component. If tempted, return to Phase 1.
+
+**GATE:** `grep -nE 'src=|href=|url\(' <edited-files>` — eyeball every path.
+
+### Phase 4 — Visual Diff Gate
+
+Before claiming "done":
+
+1. Screenshot the rendered component.
+2. Side-by-side with the Phase 1 Figma screenshot.
+3. Write a DIFF bullet list. Scan: content column width, badge position/size/color, gradient direction+stops, type size/weight per text node, action bar alignment, gaps.
+4. If non-empty, fix, re-screenshot, re-diff.
+5. Emit `DIFF: none` only when the list is truly empty.
+
+**GATE:** `DIFF: none` explicitly stated.
+
+### Phase 5 — Pre-Commit
+
+1. `grep -rnE 'localhost:[0-9]+|file://|127\.0\.0\.1:' <code-dirs>` — expect empty.
+2. The repo's `.git/hooks/pre-commit` runs the asset-ref validator automatically. Two gates:
+   - Gate A: no generator-time URLs in staged diffs.
+   - Gate B: every staged `src=`/`href=`/`url(...)` with an asset extension resolves to a file on disk.
+3. Reload the preview — zero console errors, zero 404s.
+4. Commit. Never `--no-verify` to bypass a real failure.
+
+**GATE:** Hook passes. Browser shows zero 404s.
+
+---
+
+## Folder Convention Reference
 
 ```
 assets/
-  icons/         ← UI icons (chevrons, search, etc.)
-    logos/       ← brand/third-party logos (news outlets, social, payments)
+  icons/         ← UI icons (chevrons, search, close)
+    logos/       ← brand / third-party logos
   images/        ← photos, illustrations, hero art
-  nav-icons/     ← complex multi-layer icon parts (if your project uses them)
+  nav-icons/     ← complex multi-layer icon parts (if used)
 ```
 
-### Rules by asset type
+Rules by type:
 
-- **UI icons (chevrons, arrows, close, plus)** — small, reusable, no brand identity. Inline as JSX SVG in a `components/icons.jsx` or inside the storybook file. Keeps them tokenizable (change `stroke` via prop).
-- **Brand/third-party logos** — separate `.svg` files in `assets/icons/logos/`. Do NOT try to redraw them; download the actual files. Reference via `<img src="./assets/icons/logos/foo.svg"/>`.
-- **Photos** — external CDN OK (Pexels, Unsplash) for *mocked* content. Real content → local or production CDN.
-- **Never** use `localhost:*` URLs in committed code. Never.
-
----
-
-## Design QA Workflow
-
-Two separate passes. Do not collapse them.
-
-### Visual QA (does it look like the Figma?)
-
-1. **Side-by-side:** Figma at 100% zoom, preview at 100% zoom, same viewport width.
-2. **Measure, don't eyeball:** use Figma's info panel for every text node — fontSize, fontWeight, lineHeight (px), letterSpacing (px), color. Measure spacing, padding, gap in pixels.
-3. **Screenshot proof:** after every visual change, screenshot the preview and verify against Figma. Never claim "done" without a visual diff step.
-4. **Animations:** record or step through frame-by-frame. Easing + duration matter.
-
-### Technical QA (does the code actually work?)
-
-1. **Open preview in browser** — does the page render without console errors?
-2. **Check network tab** — any 404s? Any `localhost:*` requests? (If yes → assets aren't local.)
-3. **Disable network mid-render** and reload — does it still look right, except for photos? (It should — only CDN photos should depend on network.)
-4. **Resize viewport** — intended breakpoints still work?
-5. **Cross-browser** spot-check on the browsers your team actually uses.
-
-
-### Automated visual regression (when the project grows)
-
-- **Chromatic** — built for Storybook; diffs components per-commit. TurboSnap only re-renders changed ones.
-- **Percy (BrowserStack)** — wrap tests with `percySnapshot()`; works with Playwright/Cypress/Storybook.
-- **Applitools Eyes** — AI-based (not pixel diff); fewer false positives from anti-aliasing.
-
-Not needed for small projects or early-stage work, but set up before you have 50+ components.
+- **UI icons** — small, reusable, no brand identity → inline JSX SVG, tokenizable via props.
+- **Brand / third-party logos** — never redraw; download the real `.svg` to `assets/icons/logos/`.
+- **Photos** — external CDN (Pexels/Unsplash) OK for mocked content; real content → local or production CDN.
+- **Never** `localhost:*` in committed code.
 
 ---
 
-## Hosting & Transportability Rules
+## Two-Pass QA (expanded reference)
 
-An asset is "transportable" if the build still works when you:
-- Clone the repo fresh on another machine.
-- Open the HTML file with the generator tool (Figma) closed.
-- Deploy it to a static host (GitHub Pages, Netlify, Vercel).
+### Visual QA — does it look like Figma?
+
+1. Side-by-side at 100% zoom, same viewport width.
+2. Measure, don't eyeball. Figma info panel for every text node.
+3. Screenshot proof after every visual change.
+4. Animations: step through frame-by-frame.
+
+### Technical QA — does it actually work?
+
+1. Preview in browser — console errors?
+2. Network tab — any 404s or `localhost:*` requests?
+3. Disable network mid-render and reload — still renders (minus CDN photos)?
+4. Resize viewport.
+5. Cross-browser spot check (user primary: Brave).
+
+### Automated visual regression (when 50+ components)
+
+- **Chromatic** — Storybook-native, TurboSnap re-renders only changed components.
+- **Percy (BrowserStack)** — Playwright/Cypress/Storybook wrapper.
+- **Applitools Eyes** — AI-based, tolerant of anti-aliasing noise.
+
+---
+
+## Transportability Test
+
+An asset is transportable only if the build works when you:
+
+- Clone the repo fresh on a new machine.
+- Open the HTML file with Figma closed.
+- Deploy to a static host (GitHub Pages, Netlify, Vercel).
 - Hand the folder to a dev team with no access to your design tools.
 
-If any of those four fail, assets are not transportable.
-
-For your project specifically:
-- All asset references must be **relative paths** from your output file.
-- `<img src="../assets/icons/..."/>` ← correct
-- `<img src="http://localhost:*/..."/>` ← broken the moment Figma isn't serving
+Any failure → not transportable → the work isn't done.
 
 ---
 
-## Anti-patterns to Catch Yourself On
+## Anti-Patterns
 
-1. **"It works on my machine because Figma is open"** — not a valid state.
-2. **"I'll fix the URLs later"** — URLs don't get fixed later. Fix before commit.
-3. **Text-badge placeholders for logos** — only acceptable if the user explicitly requests a stub. Otherwise it's lying about what's implemented.
-4. **Assuming the generated code is correct** — treat AI/MCP codegen as a draft. Audit for external URLs, dead references, fake imports before committing.
-5. **Committing without a preview check** — every commit that touches visuals needs a browser screenshot beforehand.
+1. "It works on my machine because Figma is open." Invalid state.
+2. "I'll fix the URLs later." You won't.
+3. Text-badge placeholders for logos unless the user explicitly asked for a stub.
+4. Trusting MCP/AI codegen output as final. It's a draft — audit for external URLs, dead refs, fake imports.
+5. Committing without a preview check.
+6. Saving an asset to `preview/assets/` because you're editing a file in `preview/`. Folder convention comes from Phase 0.
+7. `--no-verify` on a real hook failure. The hook found a bug. Fix it.
 
 ---
 
-## Check Before Every Commit That Touches Visuals
+## Pre-Commit Checklist (human-runnable)
 
 ```
-[ ] No localhost:* URLs anywhere in the diff
-[ ] No file:// URLs anywhere in the diff
-[ ] Every new asset reference points to a file that exists in the repo
-[ ] Preview loaded in browser without console errors or 404s
+[ ] No localhost:* / file:// / 127.0.0.1:* in the diff
+[ ] Every new src=, href=, url(...) resolves to a file on disk
+[ ] Preview loaded in browser — no console errors, no 404s
 [ ] Screenshot compared to Figma side-by-side
 [ ] Measured type/spacing matches Figma info panel
+[ ] DIFF: none
 ```
 
-Use: `grep -rn "localhost:" preview/ && grep -rn "file://" preview/` — should return nothing.
+The git hook enforces the first two deterministically. The rest is on you.
