@@ -1,185 +1,134 @@
 ---
 name: design-to-code-qa
-description: MANDATORY before building any UI from a Figma design, design spec, MCP tool output, or AI-generated component code. Enforces the asset pipeline (fetch + save every asset locally, never commit localhost/dev-server URLs), the visual + technical QA passes, and a pre-commit checklist. Triggers when the user asks to build/implement/port a design, convert Figma to code, work on a storybook component, or when any tool returns `localhost:*` or `file://` URLs in code.
+description: MANDATORY execution checklist when building any UI from a Figma design, design spec, MCP tool output, or AI-generated component code. This is not documentation — it is a sequence of steps with STOP gates. Do not skip ahead. Triggers when the user asks to build/implement/port a design, convert Figma to code, work on a storybook component, or when any tool returns `localhost:*` or `file://` URLs in code.
 ---
 
-# Design → Code → QA Pipeline (Required Pre-Build Reading)
+# Design → Code → QA — Execution Checklist
 
-Read this end-to-end **before writing a single line of code** when implementing from a design. Then do the work. Then run the pre-commit checklist before any commit.
+**Read this as instructions to run, not prose to summarize.** Each phase ends with a STOP gate. Do not enter the next phase until the gate condition is met. If you find yourself writing JSX before Phase 3, you skipped a step — go back.
 
-If `~/.claude/skills/design-to-code-qa/user-prefs.md` exists, read it first — it tells you which browser, preview style, and screenshot tool this designer uses. Phrase the skill's instructions in those terms instead of generic placeholders.
+The single biggest failure mode is treating this file as documentation. It is a script you execute.
 
-If the project has a local copy of `process_design_to_code_pipeline.md`, read that too — it's the source of truth.
+---
+
+## Phase 0 — Setup (run this FIRST, every time)
+
+Run, in order:
+
+1. `ls assets/ 2>/dev/null || echo "NO assets/ DIR"` — **record the existing folder convention verbatim.** If `assets/images/` exists, new images go there. If `public/assets/` exists, that's the convention. Do not invent a new one.
+2. `cat user-prefs.md 2>/dev/null` at this skill's directory — pull browser, preview style, screenshot tool, terminology.
+3. Identify the preview entry file (e.g. `preview/storybook.html`, `src/App.tsx`). Note its directory — all relative asset paths resolve from there.
+
+**STOP GATE 0:** Write one sentence in your reply stating (a) the asset folder path that already exists, (b) the preview file's directory, (c) what a relative path from preview → assets looks like (e.g. `../assets/images/foo.png`). Do not proceed to Phase 1 until this is written.
+
+---
+
+## Phase 1 — Spec Pull (before any code)
+
+For the target node in Figma:
+
+1. `Figma:get_metadata` on the **parent frame**. List every distinct visual element.
+2. `Figma:get_design_context` on **each** distinct child. Do not assume same-named siblings share a variant.
+3. `Figma:get_screenshot` on the parent frame — save the reference image.
+4. Write the spec into your plan, per element:
+   - width × height
+   - padding: `pt-*`, `pr-*`, `pb-*`, `pl-*` (directional, exact)
+   - `flex-1` / `flex-[1_0_0]` regions
+   - gradient stops verbatim
+   - font size / weight / lineHeight / letterSpacing for every text node
+   - every asset URL handed back by the MCP (these are `localhost:3845/...` — they are TEMPORARY)
+
+**STOP GATE 1:** Your plan contains measured specs for every element. No "roughly" or "approximately" anywhere. No code written yet.
+
+---
+
+## Phase 2 — Asset Download + Verify (before any JSX that references them)
+
+For every non-inline asset (photos, logos, brand SVGs, fonts):
+
+1. Pick the destination inside the folder you recorded in Phase 0. Example: `assets/images/expert-aaron-miller.png`. Not `preview/assets/...` unless Phase 0 told you that's the convention.
+2. Download: `curl -sSL "<mcp-url>" -o <dest>`.
+3. **Immediately verify:** `ls -la <dest>` — confirm non-zero file size.
+4. Compute the relative path from the preview file to the asset. Write it down. This is the string that goes in `src=`.
+5. Open the preview in the browser and confirm no 404 on that asset before moving on (use Chrome DevTools MCP / preview MCP if configured).
+
+**STOP GATE 2:** Every asset that will be referenced exists on disk at the recorded path, AND the relative path from the preview file has been computed and written down. If either is missing, do not write JSX.
+
+---
+
+## Phase 3 — Implementation
+
+Write the component. Each time you add a `src=`, `href=`, or `url(...)`:
+
+1. Use the exact relative path recorded in Phase 2.
+2. Immediately after the `Edit`, resolve the path in your head (or run `ls <preview-dir>/<relative-path>`) and confirm it points at the file you downloaded.
+3. Never pattern-match to a "similar-looking" existing component. If you catch yourself reusing a component, return to Phase 1 for that element.
+
+**STOP GATE 3:** Every asset reference you added has been resolved to an existing file. Run:
+
+```bash
+grep -nE 'src=|href=|url\(' <files-you-edited> | head -40
+```
+
+and eyeball every path.
+
+---
+
+## Phase 4 — Visual Diff Gate (before claiming "done")
+
+1. Screenshot the rendered component (Chrome DevTools MCP / preview MCP / manual, per user-prefs).
+2. Put it side-by-side with the Phase 1 Figma screenshot.
+3. Write a DIFF bullet list. Scan for: content column width, badge/pill position+size+color, gradient direction+stops, type size/weight per text node, action bar alignment, section gaps.
+4. If the list is non-empty, fix, re-screenshot, re-diff.
+5. Only emit `DIFF: none` when the list is truly empty.
+
+**STOP GATE 4:** `DIFF: none` explicitly stated. No commits before this.
+
+---
+
+## Phase 5 — Pre-Commit
+
+Run, in order:
+
+1. `grep -rnE 'localhost:[0-9]+|file://|127\.0\.0\.1:' <code-dirs>` — expect empty.
+2. The repo's `.git/hooks/pre-commit` runs the asset-ref validator automatically. If it blocks, DO NOT `--no-verify`. Fix the path.
+3. Reload the preview — zero console errors, zero 404s in the Network tab.
+4. Commit.
+
+**STOP GATE 5:** Pre-commit hook passes. Browser shows zero 404s.
 
 ---
 
 ## The One Rule That Prevents Most Mistakes
 
-**Generator-time URLs must never end up in committed code.**
+**Generator-time URLs never end up in committed code.** Any `localhost:*/...`, `file://...`, or `127.0.0.1:*/...` is valid ONLY during generation. Fetch → save to `assets/` → rewrite reference to a relative path from the preview file. Always.
 
-Whenever a tool (Figma Dev Mode MCP, AI codegen, design plugin, scaffolding script) hands you a `localhost:*/...` URL, a `file://...` path, or any reference that only resolves on the generating machine while the generator is running — that URL is valid **only during generation**. Before you commit, you MUST:
-
-1. Fetch the asset (download the file).
-2. Save it into the repo under `assets/` (or equivalent).
-3. Rewrite the reference to a **relative path from the repo root** (e.g. `./assets/icons/logos/reuters.svg`).
-
-A build that renders only when the generator tool is open is not a build. It's a demo.
+A build that renders only when Figma is open is not a build. It's a demo.
 
 ---
 
-## Figma → Code Asset Pipeline
+## Anti-Patterns — If You Catch Yourself Doing Any of These, Stop
 
-Figma's own MCP docs prescribe this order — follow it literally:
-
-1. `get_design_context` — structured representation.
-2. `get_metadata` — if (1) is truncated, navigate + re-fetch specific nodes.
-3. `get_screenshot` — visual reference while building.
-4. **Download every asset.** Every `localhost:*/assets/*.svg` (or equivalent) must be:
-   - Fetched (`curl`, WebFetch, or MCP asset download)
-   - Saved to `assets/icons/` (subfolder by kind: `logos/`, `nav-icons/`, etc.)
-   - Referenced via relative path in code
-5. **Only then** start implementation.
-
-Skipping step 4 is the single most common failure mode. Don't skip it.
-
-### Folder convention
-
-```
-assets/
-  icons/        ← UI icons (chevrons, search, close, plus)
-    logos/      ← brand/third-party logos (news outlets, social platforms, payments)
-  images/       ← photos, illustrations, hero art
-  nav-icons/    ← complex multi-layer icon parts (if applicable)
-```
-
-### Rules by asset type
-
-- **UI icons** (small, reusable, no brand identity): inline as JSX SVG. Stays tokenizable — change `stroke` via prop.
-- **Brand / third-party logos**: separate `.svg` files in `assets/icons/logos/`. Never redraw them; download the real files. Reference via `<img src="./assets/icons/logos/foo.svg"/>`.
-- **Photos**: external CDN (Pexels/Unsplash) OK for **mocked** content. Real content → local or production CDN.
-- **Never**: `localhost:*` URLs in committed code. Never.
+- "I'll fix the URLs later." You won't. Fix before commit.
+- "This looks like `ExistingComponent`, I'll reuse it." Re-run Phase 1 for this element.
+- "I'll put the asset in `preview/assets/` since I'm editing `preview/storybook.html`." Check Phase 0's recorded convention. Don't invent.
+- "I don't need to screenshot, the code looks right." Screenshot proof is non-negotiable.
+- Skipping `ls` after `curl`. The download may have 404'd silently.
+- Running `--no-verify` on a hook failure. The hook caught a real bug. Fix the bug.
 
 ---
 
-## Design QA Workflow — Two Separate Passes
+## Session Hygiene
 
-Do NOT collapse these into one. They catch different failures.
+This skill is re-injected by `~/.claude/hooks/design-skill-refresh.sh` (UserPromptSubmit) every 30 minutes or on any design keyword. When you see the `[design-skill-refresh]` banner, restart at Phase 0 for any new work. Do not assume earlier Phase 0 output still holds — folder conventions change between projects.
 
-### Pass 1 — Visual QA (does it look like Figma?)
-
-1. Figma at 100% zoom + preview at 100% zoom, same viewport width, side-by-side.
-2. **Measure, don't eyeball**: Figma info panel for every text node — fontSize, fontWeight, lineHeight (px), letterSpacing (px), color. Spacing, padding, gap in pixels.
-3. **Screenshot proof**: after every visual change, screenshot the preview and verify against Figma. Never claim "done" without a visual diff.
-4. Animations: step through frame-by-frame. Easing + duration matter.
-
-### Pass 2 — Technical QA (does the code actually work?)
-
-1. Open preview in the browser — any console errors?
-2. Check Network tab — any 404s? Any `localhost:*` requests? If yes → assets aren't local.
-3. **Disable network mid-render** and reload — still look right (minus CDN photos)? If no → local assets missing.
-4. Resize viewport — intended breakpoints still work?
-5. Cross-browser spot check on the browsers your team uses.
-
-### Automated visual regression (when project grows)
-
-Once the project has 50+ components, add one of:
-- **Chromatic** — built for Storybook, TurboSnap only re-renders changed components.
-- **Percy (BrowserStack)** — `percySnapshot()` wrapper, works with Playwright/Cypress/Storybook.
-- **Applitools Eyes** — AI-based, fewer false positives from anti-aliasing.
-
----
-
-## Transportability Test
-
-An asset is "transportable" only if the build still works when you:
-- Clone the repo fresh on a new machine.
-- Open the HTML file with the generator tool (Figma) closed.
-- Deploy to a static host (GitHub Pages, Netlify, Vercel).
-- Hand the folder to a dev team with no access to your design tools.
-
-Any of those fail → assets aren't transportable → the work isn't done.
-
----
-
-## Anti-patterns to Catch Yourself On
-
-1. "It works on my machine because Figma is open" — invalid state.
-2. "I'll fix the URLs later" — URLs don't get fixed later. Fix before commit.
-3. Text-badge placeholders for logos — only if the user explicitly requests a stub. Otherwise it's misrepresenting what's implemented.
-4. Assuming generated code is correct — AI/MCP output is a draft. Audit for external URLs, dead refs, fake imports before committing.
-5. Committing without a preview check — every visual commit gets a browser screenshot first.
-
----
-
-## Pre-Commit Checklist — Run Before Every Commit That Touches Visuals
-
-```
-[ ] No localhost:*  URLs anywhere in the diff
-[ ] No file://      URLs anywhere in the diff
-[ ] Every new asset reference points to a file that exists in the repo
-[ ] Preview loaded in browser without console errors or 404s
-[ ] Screenshot compared to Figma side-by-side
-[ ] Measured type/spacing matches Figma info panel
-```
-
-Quick command to verify:
-```bash
-grep -rn "localhost:\|file://" preview/ src/ components/ 2>/dev/null
-# should return nothing
-```
-
----
-
-## Mandatory Pre-Build Checklist — Before Writing Any JSX
-
-Before writing a single line of code for a new screen or component, complete every step:
-
-1. **Parent-down spec pull.** Call `get_metadata` on the parent frame. Identify every distinct visual element (not just unique layer names — same-named components can have variants that render completely differently at different sizes).
-2. **Per-element spec pull.** Call `get_design_context` on EACH distinct child element (hero, carousel cards, section titles, CTAs, etc.). Do not assume two same-named elements share a variant.
-3. **Trace padding / layout values.** From each `get_design_context` response, write down in your plan:
-   - `width × height`
-   - All padding values, especially directional `pr-*`, `pl-*`, `pt-*`, `pb-*`
-   - Any `flex-1` / `flex-[1_0_0]` that controls which region fills vs which is constrained
-   - Gradient stops exactly (e.g. `from-[15.636%] from-[rgba(0,0,0,0.8)] to-[80%]`)
-   - Font size / weight / lineHeight / letterSpacing for every text node
-4. **Name the component source.** For each element, decide: (a) is there an EXACT matching component already in this file, or (b) do I need a new one? Never pattern-match to a "similar-looking" existing component. A similar name or similar layout is not good enough — match the spec exactly.
-5. **Download assets.** Any non-SVG asset referenced in the spec must be saved to `assets/` before writing JSX that references it.
-
-## Mandatory Visual-Diff Gate — Before Marking Done
-
-After rendering, before saying "done" or "ready to commit":
-
-1. Take a screenshot of the rendered component.
-2. Place it side-by-side with the Figma reference screenshot.
-3. Write a bullet list of differences. Scan for:
-   - Content column width (is text constrained to the correct region via `pr:*`?)
-   - Badge / pill position, size, color, border
-   - Gradient direction and stops
-   - Type size and weight for every text element
-   - Action / engagement bar alignment (left-clustered vs. spread)
-   - Spacing between sections (gap, margin, padding)
-4. If the list is non-empty, FIX before asking for commit approval.
-5. Only emit "DIFF: none" and request commit after the diff list is empty.
-
-## Anti-Pattern: Pattern-Matching to Existing Components
-
-Symptom: "This new thing looks kind of like `ExistingComponent` — I'll reuse it at a different size."
-
-Why it fails: Figma components often have internal variants that rewire layout at different sizes. A 996-wide "Post - Image" is not a scaled-up 319-wide "Post - Image." The engagement bar position, content column padding, title size, and gradient can all be different.
-
-Rule: if you catch yourself reusing a component you didn't build specifically for this element, stop. Re-run the per-element spec pull and either confirm the existing component is exact, or build a new one.
-
-## Session Hygiene — Keeping Rules Sticky
-
-This skill is auto-reinjected by `~/.claude/hooks/design-skill-refresh.sh` (a `UserPromptSubmit` hook) every 30 minutes, or whenever the user's prompt contains a design-work keyword (`figma`, `design`, `storybook`, `component`, `pixel`, `mockup`, `screen`, `hero`, `carousel`). If you see the `[design-skill-refresh]` banner in a prompt, re-read the checklist above before touching any tool.
-
-## When This Skill Applies — Activation Triggers
+## Activation Triggers
 
 - User asks to build, implement, port, or convert a design into code.
 - User references a Figma URL or node ID.
-- Any Figma MCP tool (`get_design_context`, `get_screenshot`, etc.) is invoked.
+- Any Figma MCP tool is invoked.
 - Any tool output includes `localhost:*`, `file://`, or other dev-server URLs.
 - Working on a storybook / design-system component file.
 - Reviewing or fixing visual rendering of a committed component.
 
-When any of these apply, re-read this skill before proceeding.
+When any of these apply, execute Phase 0 before anything else.
