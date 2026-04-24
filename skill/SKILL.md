@@ -62,7 +62,7 @@ Do this before writing any animation code. If there are no animations in the tar
    ```bash
    grep -n "function [A-Z]" <files-you-plan-to-edit>
    ```
-   If you find a capitalized function inside another function body, that's the trap. Extract it before adding animations.
+   This matches all capitalized functions, not just nested ones — use it as a starting point, then confirm by eye whether any hit lives inside another function body. If yes, that's the trap. Extract it before adding animations.
 
 **The one rule for animations: The reference component's internal animations are the hero. Your job is to not step on them.**
 
@@ -119,7 +119,7 @@ and eyeball every path.
 Run after Phase 4 static diff passes. A screenshot cannot see a broken animation — this phase catches what Phase 4 misses.
 
 1. **Probe the DOM at sampled timestamps** using `preview_eval` (or browser DevTools). Sample computed styles of every animated property at: `t=50, 200, 500, 900, 1300, 1800ms` post-trigger (adjust if the animation is shorter/longer). Record the values.
-2. **Compare mobile vs desktop at the same timestamps.** The timing and order should match the Phase 1.5 reference timeline. Any deviation is a bug.
+2. **Compare your implementation vs the reference at the same timestamps.** The timing and order should match the Phase 1.5 reference timeline. Any deviation is a bug.
 3. **Check for animation fights.** Does your wrapper's opacity/transform run simultaneously with the child's internal animation? Is one masking the other? If the donut starts at t=0 but your fade-in starts at t=500, the hero animation is already half-done before it's visible. That's a fight — fix it.
 4. **Check for the nested-component trap (again).** If parent state changes mid-animation, nested components remount and their animations reset. Trigger a state change while an animation is running and watch whether it interrupts. If yes, extract the component (see Phase 1.5 step 5).
 5. Write an ANIMATION DIFF table: `| property | expected at t=Xms | actual |`. If any row shows a mismatch, fix it, re-probe, re-table.

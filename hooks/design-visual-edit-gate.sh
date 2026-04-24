@@ -49,9 +49,9 @@ try:
   d = json.load(sys.stdin)
   ti = d.get("tool_input", {})
   text = ti.get("new_string", "") + ti.get("content", "")
-  keywords = ["useReveal", "transition", "animate", "duration", "delay",
-              "easing", "keyframe", "motion", "framer", "useSpring",
-              "useTransition", "useDeferredValue"]
+  keywords = ["useReveal", "animate", "keyframe", "motion", "framer",
+              "useSpring", "useTransition", "useAnimation",
+              "AnimatePresence", "variants", "initial=", "whileInView="]
   if any(k in text for k in keywords):
     print("yes")
 except Exception:
