@@ -6,6 +6,8 @@ A portable kit for Claude Code that enforces **pixel-faithful, transportable Fig
 
 Forged from a real-world lesson: shipping a project with `http://localhost:*/...` asset URLs baked in — a build that only rendered while Figma desktop was running. This kit is the guardrail so that doesn't happen again, for you or anyone you hand it to.
 
+The deeper motivation: during the build that created this kit, Claude kept silently skipping visual verification steps, pattern-matching to existing components instead of tracing Figma specs, and forgetting rules mid-session. This turned out to coincide with [three simultaneous bugs in Claude Code](./docs/why-this-exists.md) that degraded reasoning quality invisibly — and reinforced the lesson that **instruction-based enforcement has a ceiling**. The hooks in this kit exist because shell scripts don't forget, even when the model does. See [`docs/why-this-exists.md`](./docs/why-this-exists.md) for the full context.
+
 ---
 
 ## What it does (in one sentence)
@@ -119,7 +121,10 @@ Three layers, on purpose:
 design-to-code-qa/
 ├── README.md                        ← you are here
 ├── SUMMARY.md                       ← what each file does, in plain English
+├── CHANGELOG.md                     ← version history
 ├── install.sh                       ← copies files to ~/.claude/
+├── docs/
+│   └── why-this-exists.md           ← origin story + Anthropic April 2025 postmortem context
 ├── skill/
 │   └── SKILL.md                     ← auto-loaded by Claude Code
 ├── hooks/
