@@ -40,6 +40,36 @@ case "$FILE_PATH" in
 esac
 
 BASENAME=$(basename "$FILE_PATH")
+
+# Check whether the written/edited content contains animation keywords.
+# Pull from new_string (Edit) or content (Write) via tool_input.
+ANIM_CONTENT=$(echo "$INPUT" | /usr/bin/python3 -c '
+import sys, json, re
+try:
+  d = json.load(sys.stdin)
+  ti = d.get("tool_input", {})
+  text = ti.get("new_string", "") + ti.get("content", "")
+  keywords = ["useReveal", "transition", "animate", "duration", "delay",
+              "easing", "keyframe", "motion", "framer", "useSpring",
+              "useTransition", "useDeferredValue"]
+  if any(k in text for k in keywords):
+    print("yes")
+except Exception:
+  pass
+' 2>/dev/null || echo "")
+
+ANIMATION_ADDENDUM=""
+if [ "$ANIM_CONTENT" = "yes" ]; then
+ANIMATION_ADDENDUM="
+⚠️  Animation keywords detected. Also run Phase 4.5 — Animation Diff Gate:
+- Probe computed styles via preview_eval at t=50/200/500/900/1300ms post-trigger.
+- Compare property values against Phase 1.5 timeline table.
+- Check for animation fights: does your wrapper opacity/transform overlap the child's internal animation?
+- Check for nested-component trap: trigger a parent state change mid-animation — does the child's animation reset?
+- Write an ANIMATION DIFF table. Only emit 'ANIMATION DIFF: none' when the table is empty.
+The hero is the reference component's internal animation. Do not step on it."
+fi
+
 MSG="[design-qa gate] Visual file edited: ${BASENAME}
 
 Before declaring this component done or asking to commit:
@@ -53,8 +83,8 @@ Before declaring this component done or asking to commit:
    - Action / engagement bar alignment (left-clustered vs. spread)
    - Spacing between sections (gap, margin, padding)
 4. Only emit 'DIFF: none' and request commit AFTER the list is empty.
-
-Ref: ~/.claude/skills/design-to-code-qa/SKILL.md → 'Mandatory Visual-Diff Gate'"
+${ANIMATION_ADDENDUM}
+Ref: ~/.claude/skills/design-to-code-qa/SKILL.md → Phase 4 / Phase 4.5"
 
 /usr/bin/python3 -c "
 import json, sys

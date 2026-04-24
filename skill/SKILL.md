@@ -42,6 +42,34 @@ For the target node in Figma:
 
 ---
 
+## Phase 1.5 — Animation Spec Pull (skip if component has no animations)
+
+Do this before writing any animation code. If there are no animations in the target component, skip to Phase 2.
+
+1. **Find the reference animation in source.** Note every timing constant: delays, durations, easings. Write them down exactly (`useReveal(1200)`, `transition-opacity duration-300 delay-[500ms]`, etc.).
+2. **Watch the reference animation run in the browser.** Hit Replay (or trigger manually). Describe in one sentence: what animates, in what order, and what carries the visual weight. If you can't answer "what is the hero animation," you don't understand it yet. Do not proceed.
+3. **List every animation the target component already has internally.** These run on mount regardless of any wrapper you add. Plan around them — do not fight them.
+4. **Write the animation timeline as a table:**
+
+   | t=Xms | what happens |
+   |-------|-------------|
+   | 0     | component mounts |
+   | ...   | ... |
+
+   No "approximately." If you don't have exact numbers, go measure them (`preview_eval` computed styles at sampled timestamps).
+
+5. **Check for the nested-component trap.** Any component *defined inside* another function's render body gets a new type identity on every parent re-render — its transitions reset. Run:
+   ```bash
+   grep -n "function [A-Z]" <files-you-plan-to-edit>
+   ```
+   If you find a capitalized function inside another function body, that's the trap. Extract it before adding animations.
+
+**The one rule for animations: The reference component's internal animations are the hero. Your job is to not step on them.**
+
+**STOP GATE 1.5:** You have (a) watched the reference animate in the browser, (b) written the timeline table with exact timings, (c) listed every internal animation already present in the target component. No animation code written yet.
+
+---
+
 ## Phase 2 — Asset Download + Verify (before any JSX that references them)
 
 For every non-inline asset (photos, logos, brand SVGs, fonts):
@@ -86,6 +114,21 @@ and eyeball every path.
 
 ---
 
+## Phase 4.5 — Animation Diff Gate (skip if component has no animations)
+
+Run after Phase 4 static diff passes. A screenshot cannot see a broken animation — this phase catches what Phase 4 misses.
+
+1. **Probe the DOM at sampled timestamps** using `preview_eval` (or browser DevTools). Sample computed styles of every animated property at: `t=50, 200, 500, 900, 1300, 1800ms` post-trigger (adjust if the animation is shorter/longer). Record the values.
+2. **Compare mobile vs desktop at the same timestamps.** The timing and order should match the Phase 1.5 reference timeline. Any deviation is a bug.
+3. **Check for animation fights.** Does your wrapper's opacity/transform run simultaneously with the child's internal animation? Is one masking the other? If the donut starts at t=0 but your fade-in starts at t=500, the hero animation is already half-done before it's visible. That's a fight — fix it.
+4. **Check for the nested-component trap (again).** If parent state changes mid-animation, nested components remount and their animations reset. Trigger a state change while an animation is running and watch whether it interrupts. If yes, extract the component (see Phase 1.5 step 5).
+5. Write an ANIMATION DIFF table: `| property | expected at t=Xms | actual |`. If any row shows a mismatch, fix it, re-probe, re-table.
+6. Only emit `ANIMATION DIFF: none` when the table is empty.
+
+**STOP GATE 4.5:** `ANIMATION DIFF: none` explicitly stated. Both static and animation diffs clear before committing.
+
+---
+
 ## Phase 5 — Pre-Commit
 
 Run, in order:
@@ -115,6 +158,13 @@ A build that renders only when Figma is open is not a build. It's a demo.
 - "I don't need to screenshot, the code looks right." Screenshot proof is non-negotiable.
 - Skipping `ls` after `curl`. The download may have 404'd silently.
 - Running `--no-verify` on a hook failure. The hook caught a real bug. Fix the bug.
+
+**Animation-specific:**
+- "The screenshot looks right, the animation is probably fine." Screenshots cannot see timing. Run Phase 4.5.
+- "I'll add a stagger to make it feel polished." First ask: does the reference have a stagger? If not, yours is noise.
+- "I read the reference component's source." Source ≠ behavior. Watch it run in the browser.
+- "I'll wrap this in a fade-in." Does the wrapped component have its own mount-time animations? They fire at t=0 regardless of your wrapper. Check before wrapping.
+- Writing animation code before Phase 1.5 is complete. You don't know what the hero animation is yet.
 
 ---
 
